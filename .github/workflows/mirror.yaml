@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       IMAGE_NAME:
-        description: 'dockerhub镜像名称'
+        description: '原镜像名称'
         required: true
         default: 'mysql/mysql-server'
       NEW_NAME:
-        description: '变更到阿里云后镜像名称'
+        description: '同步后镜像名称'
         required: true
         default: 'mysql-server'
       IMAGE_VERSION:
@@ -37,7 +37,8 @@ jobs:
           docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
           docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
 
-      - name:  qyweix send message
+      - name:  qyweixin send message
+        if: ${{ secrets.QYWX_ROBOT_URL != '' }}
         uses: chf007/action-wechat-work@master
         env:
           WECHAT_WORK_BOT_WEBHOOK: ${{secrets.QYWX_ROBOT_URL}}
