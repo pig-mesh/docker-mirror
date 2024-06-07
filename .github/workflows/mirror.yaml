@@ -43,9 +43,6 @@ jobs:
           WECHAT_WORK_BOT_WEBHOOK: ${{secrets.WECHAT_WORK_BOT_WEBHOOK}}
           IMAGE_URL: ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
         with:
-          msgtype: markdown
-          content: "#镜像同步成功
-            ```
-            ${{ env.IMAGE_URL }}
-            ```"
+          msgtype: text
+          content: "镜像同步成功    ${{ env.IMAGE_URL }}"
             
