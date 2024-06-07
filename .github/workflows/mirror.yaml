@@ -3,26 +3,38 @@ name: PIG 镜像 action
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      IMAGE_NAME:
+        description: 'dockerhub镜像名称'
+        required: true
+        default: 'mysql/mysql-server'
+      NEW_NAME:
+        description: '变更到阿里云后镜像名称'
+        required: true
+        default: 'mysql-server'
+      IMAGE_VERSION:
+        description: '镜像版本'
+        required: true
+        default: '8.0.32'
+      TARGET_REGISTRY:
+        description: '仓库地址'
+        required: true
+        default: 'registry.cn-hangzhou.aliyuncs.com'
+      TARGET_REPOSITORY:
+        description: '空间名称'
+        required: true
+        default: 'dockerhub_mirror'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up variables
-        id: vars
-        run: |
-          echo "::set-output name=IMAGE_NAME::mysql/mysql-server"
-          echo "::set-output name=NEW_NAME::mysql-server"
-          echo "::set-output name=IMAGE_VERSION::8.0.32"
-          echo "::set-output name=TARGET_REGISTRY::registry.cn-hangzhou.aliyuncs.com"
-          echo "::set-output name=TARGET_REPOSITORY::dockerhub_mirror"
-        shell: bash
-
       - name: Login to Docker Registry
-        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ steps.vars.outputs.TARGET_REGISTRY }}
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ github.event.inputs.TARGET_REGISTRY }}
 
       - name: Pull, tag, and push Docker image
         run: |
-          docker pull ${{ steps.vars.outputs.IMAGE_NAME }}:${{ steps.vars.outputs.IMAGE_VERSION }}
-          docker tag ${{ steps.vars.outputs.IMAGE_NAME }}:${{ steps.vars.outputs.IMAGE_VERSION }} ${{ steps.vars.outputs.TARGET_REGISTRY }}/${{ steps.vars.outputs.TARGET_REPOSITORY }}/${{ steps.vars.outputs.NEW_NAME }}:${{ steps.vars.outputs.IMAGE_VERSION }}
-          docker push ${{ steps.vars.outputs.TARGET_REGISTRY }}/${{ steps.vars.outputs.TARGET_REPOSITORY }}/${{ steps.vars.outputs.NEW_NAME }}:${{ steps.vars.outputs.IMAGE_VERSION }}
+          docker pull ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+          docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+          docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
