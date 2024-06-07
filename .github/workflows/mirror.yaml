@@ -14,7 +14,7 @@ on:
       IMAGE_VERSION:
         description: '镜像版本'
         required: true
-        default: '8.0.32'
+        default: 'latest'
       TARGET_REGISTRY:
         description: '仓库地址'
         required: true
