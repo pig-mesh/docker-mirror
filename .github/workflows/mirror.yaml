@@ -27,6 +27,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      QYWX_ROBOT_URL: ${{ secrets.QYWX_ROBOT_URL }}
     steps:
       - name: Login to Docker Registry
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ github.event.inputs.TARGET_REGISTRY }}
@@ -38,7 +40,7 @@ jobs:
           docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
 
       - name:  qyweixin send message
-        if: ${{ secrets.QYWX_ROBOT_URL != '' }}
+        if: ${{ env.QYWX_ROBOT_URL != '' }}
         uses: chf007/action-wechat-work@master
         env:
           WECHAT_WORK_BOT_WEBHOOK: ${{secrets.QYWX_ROBOT_URL}}
