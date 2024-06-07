@@ -47,5 +47,5 @@ jobs:
           content: |
             #  镜像同步成功
             ```
-            ${{IMAGE_URL}}
+            ${{ env.IMAGE_URL }}
             ```
