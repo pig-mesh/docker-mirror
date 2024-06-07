@@ -11,11 +11,11 @@ jobs:
       - name: Set up variables
         id: vars
         run: |
-          echo "IMAGE_NAME=mysql/mysql-server"
-          echo "NEW_NAME=mysql-server"
-          echo "IMAGE_VERSION=8.0.32"
-          echo "TARGET_REGISTRY=registry.cn-hangzhou.aliyuncs.com"
-          echo "TARGET_REPOSITORY=dockerhub_mirror"
+          echo "::set-output name=IMAGE_NAME::mysql/mysql-server"
+          echo "::set-output name=NEW_NAME::mysql-server"
+          echo "::set-output name=IMAGE_VERSION::8.0.32"
+          echo "::set-output name=TARGET_REGISTRY::registry.cn-hangzhou.aliyuncs.com"
+          echo "::set-output name=TARGET_REPOSITORY::dockerhub_mirror"
         shell: bash
 
       - name: Login to Docker Registry
