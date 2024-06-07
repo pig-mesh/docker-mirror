@@ -36,3 +36,17 @@ jobs:
           docker pull ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
           docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
           docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+
+      - name: Notify WeChat
+        env:
+          WEBHOOK_URL: ${{ secrets.WECHAT_WORK_BOT_WEBHOOK }}
+          IMAGE_URL: ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+        run: |
+          curl -X POST $WEBHOOK_URL \
+          -H 'Content-Type: application/json' \
+          -d '{
+                "msgtype": "text",
+                "text": {
+                  "content": "'$IMAGE_URL'"
+                }
+              }'
