@@ -40,7 +40,7 @@ jobs:
       - name:  qyweix send message
         uses: chf007/action-wechat-work@master
         env:
-          WECHAT_WORK_BOT_WEBHOOK: ${{secrets.WECHAT_WORK_BOT_WEBHOOK}}
+          WECHAT_WORK_BOT_WEBHOOK: ${{secrets.QYWX_ROBOT_URL}}
           IMAGE_URL: ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
         with:
           msgtype: text
