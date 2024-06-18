@@ -23,9 +23,7 @@ on:
         description: '空间名称'
         required: true
         default: 'dockerhub_mirror'
-      TARGET_ARCH:
-        description: '平台 amd64(默认)、arm64、arm/v7'
-        required: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,11 +35,7 @@ jobs:
 
       - name: Pull, tag, and push Docker image
         run: |
-          if [ "${{ github.event.inputs.TARGET_ARCH }}" != "" ]; then
-            docker pull --platform ${{ github.event.inputs.TARGET_ARCH }} ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          else
-            docker pull ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          fi
+          docker pull ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
           docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
           docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
 
