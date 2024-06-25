@@ -1,4 +1,4 @@
-name: PIG 镜像 action
+name: APE 镜像 action
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ on:
       TARGET_REPOSITORY:
         description: '空间名称'
         required: true
-        default: 'pub4cloud'
+        default: 'public4cloud'
 
 jobs:
   build:
