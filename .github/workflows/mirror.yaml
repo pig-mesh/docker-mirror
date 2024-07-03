@@ -22,7 +22,7 @@ on:
       TARGET_REPOSITORY:
         description: '空间名称'
         required: true
-        default: 'public4cloud'
+        default: 'pub4cloud'
 
 jobs:
   build:
