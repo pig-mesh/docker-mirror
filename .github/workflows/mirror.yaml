@@ -30,24 +30,38 @@ jobs:
     env:
       QYWX_ROBOT_URL: ${{ secrets.QYWX_ROBOT_URL }}
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
       - name: Login to Docker Registry
-        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ github.event.inputs.TARGET_REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ github.event.inputs.TARGET_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Pull and push all platform images
         run: |
           # 创建一个新的 builder 实例
-          docker buildx create --use
+          docker buildx create --use --name multiarch-builder
           
-          # 拉取源镜像的 manifest list
+          # 显示源镜像信息
+          echo "源镜像支持的架构："
           docker buildx imagetools inspect ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
           
-          # 使用 buildx 拉取并推送所有架构的镜像
-          docker buildx imagetools create \
+          # 使用 buildx 构建并推送多架构镜像
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --pull \
+            --build-arg SOURCE_IMAGE=${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
             --tag ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
-            ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+            --push \
+            - <<EOF
+            FROM --platform=\${TARGETPLATFORM} ${SOURCE_IMAGE}
+            EOF
 
       - name: qyweixin send message
         if: ${{ env.QYWX_ROBOT_URL != '' }}
@@ -60,8 +74,7 @@ jobs:
           content: |
             # 镜像同步成功（多架构）
             ```
-            ${{ env.IMAGE_URL }}
-            
-            支持的架构:
-            $(docker buildx imagetools inspect ${{ env.IMAGE_URL }} | grep -A 5 "Platform:")
+            镜像地址：${{ env.IMAGE_URL }}
+            支持的架构：
+            ${{ toJSON(steps.build.outputs.platforms) }}
             ```
