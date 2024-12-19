@@ -30,14 +30,24 @@ jobs:
     env:
       QYWX_ROBOT_URL: ${{ secrets.QYWX_ROBOT_URL }}
     steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
       - name: Login to Docker Registry
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ github.event.inputs.TARGET_REGISTRY }}
 
-      - name: Pull, tag, and push Docker image
+      - name: Pull and push all platform images
         run: |
-          docker pull ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+          # 创建一个新的 builder 实例
+          docker buildx create --use
+          
+          # 拉取源镜像的 manifest list
+          docker buildx imagetools inspect ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+          
+          # 使用 buildx 拉取并推送所有架构的镜像
+          docker buildx imagetools create \
+            --tag ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
+            ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
 
       - name: qyweixin send message
         if: ${{ env.QYWX_ROBOT_URL != '' }}
@@ -48,7 +58,10 @@ jobs:
         with:
           msgtype: markdown
           content: |
-            # 镜像同步成功
+            # 镜像同步成功（多架构）
             ```
             ${{ env.IMAGE_URL }}
+            
+            支持的架构:
+            $(docker buildx imagetools inspect ${{ env.IMAGE_URL }} | grep -A 5 "Platform:")
             ```
