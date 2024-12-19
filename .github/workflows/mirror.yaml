@@ -23,6 +23,10 @@ on:
         description: '空间名称'
         required: true
         default: 'dockerhub_mirror'
+      PLATFORMS:
+        description: '目标架构(逗号分隔,如: linux/amd64,linux/arm64)'
+        required: true
+        default: 'linux/amd64,linux/arm64'
 
 jobs:
   build:
@@ -30,38 +34,29 @@ jobs:
     env:
       QYWX_ROBOT_URL: ${{ secrets.QYWX_ROBOT_URL }}
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
       - name: Login to Docker Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ github.event.inputs.TARGET_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ github.event.inputs.TARGET_REGISTRY }}
 
-      - name: Pull and push all platform images
+      - name: Pull, tag, and push Docker image for each platform
         run: |
-          # 创建一个新的 builder 实例
-          docker buildx create --use --name multiarch-builder
+          # 将平台列表转换为数组
+          IFS=',' read -ra PLATFORM_ARRAY <<< "${{ github.event.inputs.PLATFORMS }}"
           
-          # 显示源镜像信息
-          echo "源镜像支持的架构："
-          docker buildx imagetools inspect ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          
-          # 使用 buildx 构建并推送多架构镜像
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --pull \
-            --build-arg SOURCE_IMAGE=${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
-            --tag ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
-            --push \
-            - <<EOF
-            FROM --platform=\${TARGETPLATFORM} ${SOURCE_IMAGE}
-            EOF
+          # 遍历每个平台
+          for PLATFORM in "${PLATFORM_ARRAY[@]}"; do
+            echo "Processing platform: $PLATFORM"
+            
+            # 拉取特定平台的镜像
+            docker pull --platform $PLATFORM ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+            
+            # 标记镜像，添加平台后缀
+            PLATFORM_SUFFIX=$(echo $PLATFORM | sed 's/\//-/g')
+            docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
+              ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}-${PLATFORM_SUFFIX}
+            
+            # 推送镜像
+            docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}-${PLATFORM_SUFFIX}
+          done
 
       - name: qyweixin send message
         if: ${{ env.QYWX_ROBOT_URL != '' }}
@@ -72,9 +67,10 @@ jobs:
         with:
           msgtype: markdown
           content: |
-            # 镜像同步成功（多架构）
+            # 镜像同步成功
             ```
-            镜像地址：${{ env.IMAGE_URL }}
-            支持的架构：
-            ${{ toJSON(steps.build.outputs.platforms) }}
+            基础镜像地址：${{ env.IMAGE_URL }}
+            
+            同步的架构版本：
+            ${{ github.event.inputs.PLATFORMS }}
             ```
