@@ -33,11 +33,14 @@ jobs:
       - name: Login to Docker Registry
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ github.event.inputs.TARGET_REGISTRY }}
 
-      - name: Pull, tag, and push Docker image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Mirror Docker image using buildx
         run: |
-          docker pull ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          docker tag ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
-          docker push ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
+          docker buildx imagetools create \
+            ${{ github.event.inputs.IMAGE_NAME }}:${{ github.event.inputs.IMAGE_VERSION }} \
+            --tag ${{ github.event.inputs.TARGET_REGISTRY }}/${{ github.event.inputs.TARGET_REPOSITORY }}/${{ github.event.inputs.NEW_NAME }}:${{ github.event.inputs.IMAGE_VERSION }}
 
       - name: qyweixin send message
         if: ${{ env.QYWX_ROBOT_URL != '' }}
